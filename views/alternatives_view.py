@@ -8,7 +8,7 @@ import streamlit as st
 
 from src.config import ASSET_COLORS, MANDATE, TICKERS
 from ui import context as cx
-from ui.theme import GARNET, MOSS, note, pct, show_chart, show_table, style
+from ui.theme import BAD_TEXT, GOOD_TEXT, note, pct, show_chart, show_table, style
 
 PCT_ROWS = ["CAGR", "Excess over T-bills", "Volatility", "Max drawdown", "CVaR 95% 1d", "CVaR 99% 1d",
             "2008 replay", "2008 max DD", "2020 replay", "2022 replay", "Satellite share"]
@@ -27,7 +27,7 @@ def _fmt_metrics(m: pd.DataFrame) -> pd.DataFrame:
 
 
 def _colour(v):
-    return f"color:{MOSS if v == 'Pass' else GARNET};font-weight:600" if v in ("Pass", "Breach") else ""
+    return f"color:{GOOD_TEXT if v == 'Pass' else BAD_TEXT};font-weight:600" if v in ("Pass", "Breach") else ""
 
 
 def render() -> None:

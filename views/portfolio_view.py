@@ -31,8 +31,9 @@ def render() -> None:
     with c1:
         st.subheader("Weights")
         w = ctx.weights
-        fig = go.Figure(go.Pie(labels=list(w.index), values=w.values, hole=0.55, sort=False,
-                               marker=dict(colors=[ASSET_COLORS[t] for t in w.index]),
+        held = w[w > 0.0005]  # funds with no weight would only add overlapping "0%" labels
+        fig = go.Figure(go.Pie(labels=list(held.index), values=held.values, hole=0.55, sort=False,
+                               marker=dict(colors=[ASSET_COLORS[t] for t in held.index]),
                                textinfo="label+percent"))
         fig.update_traces(hovertemplate="%{label}: %{percent}<extra></extra>")
         show_chart(style(fig, 300).update_layout(showlegend=False))
@@ -126,7 +127,7 @@ def render() -> None:
     for col, data_, title in [(cc1, lr, "All days"), (cc2, stressed, "Stressed days (high market volatility)")]:
         corr = data_.corr()
         fig = go.Figure(go.Heatmap(z=corr.values, x=corr.columns, y=corr.index, zmin=-1, zmax=1,
-                                   colorscale=[[0, SAPPHIRE], [0.5, "#FFFFFF"], [1, GARNET]],
+                                   colorscale=[[0, SAPPHIRE], [0.5, "rgba(128,128,128,0.15)"], [1, GARNET]],
                                    text=np.round(corr.values, 2), texttemplate="%{text}"))
         with col:
             show_chart(style(fig, 360, title=title))

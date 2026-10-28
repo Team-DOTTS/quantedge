@@ -9,7 +9,7 @@ import streamlit as st
 from src import var_es as ve
 from src.config import MARKET_PROXY
 from ui import context as cx
-from ui.theme import (GARNET, GARNET_LIGHT, INK, SAFFRON, SAPPHIRE, note, pct, show_chart,
+from ui.theme import (GARNET, GARNET_LIGHT, LINE, PANEL, SAFFRON, SAPPHIRE, note, pct, show_chart,
                       show_table, style, usd)
 
 
@@ -51,7 +51,7 @@ def render() -> None:
         fig.add_vline(x=x, line_color=color, line_width=3)
         fig.add_annotation(x=x, y=ymax, yref="paper", text=f"{label}<br>{usd(x)}", showarrow=False,
                            xanchor="left", yanchor="top", font=dict(color=color, size=12), xshift=4,
-                           bgcolor="rgba(255,255,255,0.85)")
+                           bgcolor=PANEL)
         ymax -= 0.17
     fig.update_layout(barmode="overlay", bargap=0.02)
     fig.update_xaxes(title="Daily loss in USD (gains to the left of zero)", tickformat="$,.0f")
@@ -122,10 +122,11 @@ def render() -> None:
     boot = cx.bootstrap(ctx.port_log, s.confidence)
     mce = ve.monte_carlo_error(ctx.d["lr"].values, ctx.weights.values, s.confidence)
     b1, b2, b3 = st.columns(3)
-    b1.metric("Historical VaR, 90% bootstrap range",
-              f"{usd(ctx.loss_usd(boot['var_lo']))} – {usd(ctx.loss_usd(boot['var_hi']))}")
-    b2.metric("Historical ES, 90% bootstrap range",
-              f"{usd(ctx.loss_usd(boot['es_lo']))} – {usd(ctx.loss_usd(boot['es_hi']))}")
+    def k(x):  # USD in thousands, so the range fits in the metric box
+        return f"${ctx.loss_usd(x) / 1e3:,.0f}k"
+
+    b1.metric("Historical VaR, 90% bootstrap range", f"{k(boot['var_lo'])} – {k(boot['var_hi'])}")
+    b2.metric("Historical ES, 90% bootstrap range", f"{k(boot['es_lo'])} – {k(boot['es_hi'])}")
     b3.metric("Monte Carlo VaR standard error", usd(mce["var_se"] * ctx.value * np.sqrt(s.horizon)))
     note("The bootstrap resamples history 500 times and recomputes the estimate; a wide range means "
          "the number should be quoted with caution. ES ranges are wider than VaR ranges because ES "
@@ -150,7 +151,7 @@ def render() -> None:
     with r2:
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=reg.index, y=reg["market_vol"], name="SPY EWMA volatility",
-                                 line=dict(color=INK, width=1.2)))
+                                 line=dict(color=LINE, width=1.2)))
         fig.add_hline(y=float(reg["threshold"].iloc[0]), line_dash="dot", line_color=GARNET,
                       annotation_text="stressed above this line")
         show_chart(style(fig, 280, yfmt=".0%"))

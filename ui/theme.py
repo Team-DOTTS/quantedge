@@ -2,7 +2,10 @@
 
 Palette ("Ceylon sapphire"): a deep sapphire for the portfolio, garnet for losses
 and tail risk, moss for pass, saffron for caution. Losses are always garnet so a
-committee member can find the downside on any chart at a glance."""
+committee member can find the downside on any chart at a glance.
+
+Text colours are left to Streamlit's light or dark theme; backgrounds and grid
+lines use see-through greys, so every page reads the same in both themes."""
 from __future__ import annotations
 
 import inspect
@@ -20,28 +23,36 @@ SAFFRON = "#C9971C"
 INK = "#1D2433"
 SLATE = "#6B7280"
 MIST = "#E9ECF2"
+LINE = "#8A94A6"        # neutral line colour that shows on light and dark backgrounds
+GRID = "rgba(128,128,128,0.22)"
+PANEL = "rgba(128,128,128,0.07)"
+BORDER = "rgba(128,128,128,0.28)"
+# Brighter versions of the status colours for text, readable on white and on black
+GOOD_TEXT = "#3E9B5A"
+BAD_TEXT = "#D6455B"
+WARN_TEXT = "#D4A22A"
+TEXT_COLOR = {MOSS: GOOD_TEXT, GARNET: BAD_TEXT, SAFFRON: WARN_TEXT}
 
 ZONE_COLORS = {"Green": MOSS, "Yellow": SAFFRON, "Red": GARNET}
 
 CSS = f"""
 <style>
 .block-container {{ padding-top: 2.2rem; max-width: 1280px; }}
-h1 {{ font-weight: 700; letter-spacing: -0.01em; color: {INK}; }}
-h2, h3 {{ color: {INK}; }}
+h1 {{ font-weight: 700; letter-spacing: -0.01em; }}
 [data-testid="stMetric"] {{
-    background: #FFFFFF; border: 1px solid {MIST}; border-radius: 6px;
+    background: {PANEL}; border: 1px solid {BORDER}; border-radius: 6px;
     padding: 0.7rem 0.9rem;
 }}
-[data-testid="stMetricLabel"] p {{ color: {SLATE}; }}
+[data-testid="stMetricLabel"] p {{ opacity: 0.75; }}
 .verdict {{ border-radius: 6px; padding: 1rem 1.2rem; margin: 0.4rem 0 1.2rem 0;
-            border-left: 6px solid; background: #FFFFFF; }}
+            border-left: 6px solid; background: {PANEL}; }}
 .verdict h3 {{ margin: 0 0 0.25rem 0; }}
-.verdict p {{ margin: 0; color: {INK}; }}
+.verdict p {{ margin: 0; }}
 .light {{ display: flex; gap: 0.5rem; align-items: center; }}
 .light span {{ width: 34px; height: 34px; border-radius: 50%; display: inline-block;
-               opacity: 0.18; border: 1px solid rgba(0,0,0,0.1); }}
-.light span.on {{ opacity: 1; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }}
-.note {{ color: {SLATE}; font-size: 0.92rem; }}
+               opacity: 0.18; border: 1px solid {BORDER}; }}
+.light span.on {{ opacity: 1; box-shadow: 0 0 0 3px {PANEL}; }}
+.note {{ opacity: 0.75; font-size: 0.92rem; }}
 </style>
 """
 
@@ -71,20 +82,20 @@ def num(x, d: int = 2) -> str:
 # --- charts -----------------------------------------------------------------
 def style(fig: go.Figure, height: int = 380, title: str | None = None,
           yfmt: str | None = None, xfmt: str | None = None) -> go.Figure:
+    # Font and background colours come from Streamlit's light or dark theme.
     fig.update_layout(
-        template="plotly_white", height=height,
-        title=dict(text=title, x=0, font=dict(size=15, color=INK)) if title else None,
+        height=height,
+        title=dict(text=title or "", x=0, font=dict(size=15)),
         margin=dict(l=10, r=10, t=45 if title else 15, b=10),
-        font=dict(family="Source Sans Pro, Helvetica, Arial, sans-serif", size=13, color=INK),
+        font=dict(family="Source Sans Pro, Helvetica, Arial, sans-serif", size=13),
         legend=dict(orientation="h", yanchor="bottom", y=1.01, xanchor="left", x=0),
-        hoverlabel=dict(bgcolor="white"),
     )
     if yfmt:
         fig.update_yaxes(tickformat=yfmt)
     if xfmt:
         fig.update_xaxes(tickformat=xfmt)
     fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(gridcolor=MIST)
+    fig.update_yaxes(gridcolor=GRID)
     return fig
 
 
@@ -105,7 +116,7 @@ def show_table(df: pd.DataFrame, **kwargs) -> None:
 
 def verdict_box(title: str, body: str, color: str) -> None:
     st.markdown(f'<div class="verdict" style="border-left-color:{color}">'
-                f'<h3 style="color:{color}">{title}</h3><p>{body}</p></div>',
+                f'<h3 style="color:{TEXT_COLOR.get(color, color)}">{title}</h3><p>{body}</p></div>',
                 unsafe_allow_html=True)
 
 
@@ -113,7 +124,7 @@ def traffic_light_html(zone: str) -> str:
     spans = "".join(
         f'<span class="{"on" if z == zone else ""}" style="background:{c}"></span>'
         for z, c in ZONE_COLORS.items())
-    return f'<div class="light">{spans}<strong style="margin-left:0.6rem;font-size:1.3rem;color:{ZONE_COLORS[zone]}">{zone}</strong></div>'
+    return f'<div class="light">{spans}<strong style="margin-left:0.6rem;font-size:1.3rem;color:{TEXT_COLOR[ZONE_COLORS[zone]]}">{zone}</strong></div>'
 
 
 def note(text: str) -> None:

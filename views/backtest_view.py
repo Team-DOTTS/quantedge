@@ -7,7 +7,7 @@ import streamlit as st
 
 from src.backtest import zone_for
 from ui import context as cx
-from ui.theme import (GARNET, INK, MOSS, SAFFRON, SAPPHIRE, ZONE_COLORS, note, num, pct,
+from ui.theme import (BAD_TEXT, GARNET, GOOD_TEXT, LINE, MOSS, SAFFRON, SAPPHIRE, ZONE_COLORS, note, num, pct,
                       show_chart, show_table, style, traffic_light_html)
 
 
@@ -55,7 +55,7 @@ def render() -> None:
          "Statistic": ch["LR_cc"], "p-value": ch["p_cc"], "Result": _verdict(ch["p_cc"])},
     ]).set_index("Test")
     show_table(tests.style.format({"Statistic": "{:.2f}", "p-value": "{:.3f}"}).map(
-        lambda v: f"color:{GARNET if 'Reject' in str(v) and 'not' not in str(v) else MOSS};font-weight:600",
+        lambda v: f"color:{BAD_TEXT if 'Reject' in str(v) and 'not' not in str(v) else GOOD_TEXT};font-weight:600",
         subset=["Result"]))
     note(f"Tests use a 5% significance level. A breach followed by another breach happened with "
          f"probability {pct(ch['pi11'], 1)} versus {pct(ch['pi01'], 1)} after a normal day; "
@@ -83,7 +83,7 @@ def render() -> None:
     for lo, hi, z in [(0, green_max + 0.5, "Green"), (green_max + 0.5, yellow_max + 0.5, "Yellow"),
                       (yellow_max + 0.5, top, "Red")]:
         fig.add_hrect(y0=lo, y1=hi, fillcolor=ZONE_COLORS[z], opacity=0.12, line_width=0)
-    fig.add_trace(go.Scatter(x=rb.index, y=rb.values, mode="lines", line=dict(color=INK, width=1.5),
+    fig.add_trace(go.Scatter(x=rb.index, y=rb.values, mode="lines", line=dict(color=LINE, width=1.5),
                              name="Breaches in trailing 250 days"))
     fig.add_hline(y=250 * (1 - s.confidence), line_dash="dot", line_color=SAPPHIRE,
                   annotation_text="expected")

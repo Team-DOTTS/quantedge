@@ -7,7 +7,7 @@ import streamlit as st
 from src import data
 from src.config import ASSET_COLORS
 from ui import context as cx
-from ui.theme import INK, note, show_chart, show_table, style
+from ui.theme import LINE, note, show_chart, show_table, style
 
 
 @st.cache_data(show_spinner="Running stationarity tests...")
@@ -79,7 +79,7 @@ def render() -> None:
     st.subheader("Risk-free rate")
     rf = d["rf_annual"]
     if rf is not None and not rf.dropna().empty:
-        fig = go.Figure(go.Scatter(x=rf.index, y=rf.values / 100, line=dict(color=INK, width=1.3),
+        fig = go.Figure(go.Scatter(x=rf.index, y=rf.values / 100, line=dict(color=LINE, width=1.3),
                                    name="3-month T-bill"))
         show_chart(style(fig, 260, yfmt=".1%"))
     else:

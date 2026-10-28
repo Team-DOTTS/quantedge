@@ -8,7 +8,7 @@ import streamlit as st
 from src import var_es as ve
 from src.evt import THRESHOLD_RULE_NOTES
 from ui import context as cx
-from ui.theme import (GARNET, INK, SAPPHIRE, SLATE, note, num, pct, show_chart, show_table, style,
+from ui.theme import (GARNET, LINE, SAPPHIRE, SLATE, note, num, pct, show_chart, show_table, style,
                       usd, usdm)
 
 
@@ -45,7 +45,7 @@ def render() -> None:
     with d1:
         fig = go.Figure(go.Scatter(x=diag["threshold"].map(lambda u: float(ve.to_loss_pct(u))),
                                    y=diag["mean_excess"].map(lambda m: float(ve.to_loss_pct(m))),
-                                   mode="lines+markers", line=dict(color=INK), marker=dict(size=5),
+                                   mode="lines+markers", line=dict(color=LINE), marker=dict(size=5),
                                    name="Mean excess"))
         fig.add_vline(x=float(ve.to_loss_pct(res.threshold)), line_color=GARNET, line_width=2,
                       annotation_text="chosen")

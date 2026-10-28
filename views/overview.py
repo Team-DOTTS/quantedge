@@ -8,8 +8,8 @@ import streamlit as st
 from src import var_es as ve
 from src.config import ASSET_COLORS, MANDATE, UNIVERSE
 from ui import context as cx
-from ui.theme import (GARNET, MOSS, SAFFRON, note, pct, show_chart, show_table, style, usd,
-                      usdm, verdict_box)
+from ui.theme import (BAD_TEXT, GARNET, GOOD_TEXT, MOSS, SAFFRON, WARN_TEXT, note, pct, show_chart,
+                      style, usd, usdm, verdict_box)
 
 
 def _status(ok: bool | None) -> str:
@@ -38,22 +38,20 @@ def render() -> None:
     return_target = rf_mean + MANDATE["return_excess_over_rf"]
 
     checks = [
-        ("Return objective (historical CAGR vs T-bills + "
-         f"{pct(MANDATE['return_excess_over_rf'], 1)})", pct(k["CAGR"]),
+        (f"Return (T-bills + {pct(MANDATE['return_excess_over_rf'], 1)})", pct(k["CAGR"]),
          f"≥ {pct(return_target, 1)}", k["CAGR"] >= return_target, "soft"),
-        ("Annualised volatility", pct(k["Annualised volatility"]), f"≤ {pct(lim['max_volatility'], 1)}",
+        ("Volatility", pct(k["Annualised volatility"]), f"≤ {pct(lim['max_volatility'], 1)}",
          k["Annualised volatility"] <= lim["max_volatility"], "hard"),
-        ("99% 1-day Expected Shortfall (more conservative of chosen model and EVT)",
-         f"{pct(es99_pct)} ({usd(es99_pct * ctx.value)})", f"≤ {pct(lim['max_es99_1d'], 1)}",
+        ("99% 1-day ES", pct(es99_pct), f"≤ {pct(lim['max_es99_1d'], 1)}",
          es99_pct <= lim["max_es99_1d"], "hard"),
-        ("Maximum historical drawdown", pct(k["Maximum drawdown"]), f"≥ -{pct(lim['max_drawdown'], 0)}",
+        ("Max drawdown", pct(k["Maximum drawdown"]), f"≥ -{pct(lim['max_drawdown'], 0)}",
          abs(k["Maximum drawdown"]) <= lim["max_drawdown"], "hard"),
-        (f"Deepest fall in a replayed crisis ({worst_dd_name})", pct(worst_dd),
+        ("Deepest crisis fall", pct(worst_dd),
          f"≥ -{pct(lim['max_stress_loss'], 0)}", abs(min(worst_dd, 0)) <= lim["max_stress_loss"], "hard"),
-        (f"Hypothetical scenario ({hyp_name})", pct(hyp["total_return"]),
+        ("Invented scenario", pct(hyp["total_return"]),
          f"≥ -{pct(lim['max_stress_loss'], 0)}", abs(min(hyp["total_return"], 0)) <= lim["max_stress_loss"],
          "hard"),
-        (f"VaR backtest, {s.var_method} at {s.confidence:.0%}", zone, "Green",
+        (f"VaR backtest ({s.confidence:.0%})", zone, "Green",
          True if zone == "Green" else (None if zone == "Yellow" else False), "hard"),
         ("Allocation limits", "Met" if not ctx.opt["issues"] else "; ".join(ctx.opt["issues"]),
          "All met", not ctx.opt["issues"], "hard"),
@@ -94,6 +92,8 @@ def render() -> None:
         fig = go.Figure(go.Bar(x=w.values, y=[f"{t}  {UNIVERSE[t]['role']}" for t in w.index],
                                orientation="h", marker_color=[ASSET_COLORS[t] for t in w.index],
                                text=[pct(x, 1) for x in w.values], textposition="outside"))
+        fig.update_traces(cliponaxis=False)  # never cut off the % labels at the chart edge
+        fig.update_xaxes(range=[0, float(w.max()) * 1.25])
         show_chart(style(fig, 320, xfmt=".0%"))
         g = cx.group_weights(ctx.weights)
         note(f"Equity {pct(g['Equity'], 0)} · Bonds {pct(g['Bonds'], 0)} · Gold {pct(g['Gold'], 0)}")
@@ -101,9 +101,13 @@ def render() -> None:
         st.subheader("Mandate checks")
         tbl = pd.DataFrame([{"Check": c[0], "Portfolio": c[1], "Limit": c[2], "Status": _status(c[3])}
                             for c in checks]).set_index("Check")
-        show_table(tbl.style.map(lambda v: f"color:{ {'Pass': MOSS, 'Breach': GARNET, 'Caution': SAFFRON}.get(v, 'inherit')};"
-                                 "font-weight:600" if v in ('Pass', 'Breach', 'Caution') else "",
-                                 subset=["Status"]))
+        status_colour = {"Pass": GOOD_TEXT, "Breach": BAD_TEXT, "Caution": WARN_TEXT}
+        # st.table wraps long check names, so all four columns stay visible
+        st.table(tbl.style.map(lambda v: f"color:{status_colour[v]};font-weight:600"
+                               if v in status_colour else "", subset=["Status"]))
+        note(f"ES is the more conservative of {s.var_method} and EVT ({usd(es99_pct * ctx.value)}). "
+             f"Deepest crisis fall: {worst_dd_name}. Invented scenario: {hyp_name}. "
+             f"VaR backtest uses {s.var_method}.")
 
     st.subheader("The committee's three questions")
     boot = cx.bootstrap(ctx.port_log, 0.99)
