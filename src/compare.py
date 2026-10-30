@@ -17,7 +17,7 @@ from . import kpis, stress
 from . import portfolio as pf
 from . import var_es as ve
 from .config import (DRAFT_WEIGHTS, HISTORICAL_SCENARIOS, MANDATE, RECOMMENDED_WEIGHTS, TICKERS,
-                     TRADING_DAYS)
+                     TRADING_DAYS, TRIGGER_WEIGHTS)
 
 GFC = "2008 Global Financial Crisis"
 COVID = "March 2020 COVID crash"
@@ -30,6 +30,9 @@ LIMITS = MANDATE["allocation_limits"]
 MARKOWITZ_CONS = pf.Constraints(max_weight=LIMITS["max_weight"], min_bonds=LIMITS["min_bonds"],
                                 fund_caps=tuple(LIMITS["fund_caps"].items()))
 LONG_ONLY = pf.Constraints()
+# The full mandate allocation limits, used for the minimum-CVaR candidate.
+MANDATE_CONS = pf.Constraints(max_weight=LIMITS["max_weight"], max_equity=LIMITS["max_equity"],
+                              min_bonds=LIMITS["min_bonds"], fund_caps=tuple(LIMITS["fund_caps"].items()))
 
 # Round-number mixes searched for the drawdown floor and the walk-forward test (%).
 GRID = {"AGG": range(35, 81, 5), "GLD": range(0, 31, 5), "SPY": range(0, 41, 5),
@@ -45,8 +48,10 @@ def candidate_weights(sr: pd.DataFrame, rf_annual: float, cov_method: str = "sam
     mu, cov, _ = pf.estimate_inputs(sr, cov_method)
     return {
         "Recommended": _series(RECOMMENDED_WEIGHTS),
+        "Trigger mix (gold 25%)": _series(TRIGGER_WEIGHTS),
         "First draft": _series(DRAFT_WEIGHTS),
         "Constrained Markowitz": pf.max_sharpe(mu, cov, MARKOWITZ_CONS, rf_annual).weights,
+        "Minimum CVaR (99%)": pf.min_cvar(sr, MANDATE_CONS, 0.99).weights,
         "Max Sharpe (long-only)": pf.max_sharpe(mu, cov, LONG_ONLY, rf_annual).weights,
         "Minimum variance": pf.min_variance(cov, LONG_ONLY).weights,
         "Equal weight": _series({t: 1 / len(TICKERS) for t in TICKERS}),
@@ -158,7 +163,9 @@ def walk_forward(sr: pd.DataFrame, rf_daily: pd.Series, split: str) -> dict:
 def drawdown_floor(grid: pd.DataFrame) -> dict:
     """Shallowest maximum drawdown any mix in the grid achieved, and what it needed."""
     best = grid.loc[grid["mdd"].idxmax()]
+    in_cap = grid["AGG"] <= LIMITS["fund_caps"]["AGG"] + 1e-9
     return {"best_mdd": float(best["mdd"]), "weights": best[TICKERS],
+            "best_mdd_in_cap": float(grid.loc[in_cap, "mdd"].max()),
             "share_within_15": float((grid["mdd"] >= -0.15).mean()), "n": len(grid)}
 
 

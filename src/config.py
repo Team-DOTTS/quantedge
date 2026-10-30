@@ -79,6 +79,12 @@ RECOMMENDED_WEIGHTS: dict[str, float] = {
     "AGG": 0.55, "GLD": 0.20, "SPY": 0.15, "EFA": 0.0, "EEM": 0.0, "XLE": 0.05, "XLK": 0.05,
 }
 
+# Pre-agreed trigger mix: if the stock-bond correlation trigger fires, 5% moves from AGG to gold
+# (gold cap lifted to 25% for this purpose only, and only if this mix still passes every limit).
+TRIGGER_WEIGHTS: dict[str, float] = {
+    "AGG": 0.50, "GLD": 0.25, "SPY": 0.15, "EFA": 0.0, "EEM": 0.0, "XLE": 0.05, "XLK": 0.05,
+}
+
 # First draft, kept for comparison: it breaches the volatility, ES and drawdown limits.
 DRAFT_WEIGHTS: dict[str, float] = {
     "AGG": 0.45, "SPY": 0.20, "GLD": 0.15, "EFA": 0.10, "EEM": 0.04, "XLE": 0.03, "XLK": 0.03,
@@ -127,8 +133,8 @@ HYPOTHETICAL_SCENARIOS: dict[str, dict] = {
     },
     "Stock-bond correlation breakdown": {
         "story": (
-            "A 2022-style episode but twice as severe: equities and bonds fall together, "
-            "so the usual diversification from bonds fails."
+            "A deeper 2022-style episode: equities fall much further than in 2022, bonds fall "
+            "slightly more, and gold falls too, so neither bonds nor gold diversify."
         ),
         "shocks": {"SPY": -0.30, "EFA": -0.32, "EEM": -0.38, "AGG": -0.15,
                    "GLD": -0.05, "XLE": -0.20, "XLK": -0.40},

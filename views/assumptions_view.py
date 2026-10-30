@@ -84,7 +84,7 @@ lending, counterparty and custody risk, and the possibility of a fund closing ar
 - **The calm/stressed regime split** uses a threshold computed from the whole sample, so it describes
   history; it is not a real-time forecast.
 - **Backtests** cover one historical path. Passing them shows the model was not wrong on this path; it does
-  not guarantee the next crisis. With about 37 expected breaches at 99% over 2012-2026, the tests have limited power
+  not guarantee the next crisis. With about 50 expected breaches at 99% over 2007-2026, the tests have limited power
   to tell a good model from a slightly wrong one.
 - **Our own choice of weights saw the whole sample.** We picked the mix after looking at 2004-2026, so its
   backtest is in-sample. The sub-period and walk-forward tests on the Alternatives page limit this bias but

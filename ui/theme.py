@@ -63,7 +63,10 @@ def inject_css() -> None:
 
 # --- formatting -------------------------------------------------------------
 def pct(x, d: int = 2) -> str:
-    return "n/a" if x is None or (isinstance(x, float) and np.isnan(x)) else f"{x * 100:.{d}f}%"
+    if x is None or (isinstance(x, float) and np.isnan(x)):
+        return "n/a"
+    # round exact ties away from zero, as the report does (e.g. -8.55% shows as -8.6%)
+    return f"{x * 100 + np.copysign(1e-9, x):.{d}f}%"
 
 
 def usd(x, d: int = 0) -> str:

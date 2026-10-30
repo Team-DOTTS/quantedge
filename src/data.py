@@ -162,8 +162,13 @@ def clean_prices(raw: pd.DataFrame, max_ffill: int = 2, stale_days: int = 5,
 
     first_valid = px.apply(lambda s: s.first_valid_index())
     common_start = first_valid.max()
-    log.append(f"Common sample starts {common_start.date()} (limited by "
-               f"{first_valid.idxmax()}, the youngest fund).")
+    youngest = [t for t in px.columns if first_valid[t] == common_start]
+    if len(youngest) == len(px.columns):
+        log.append(f"Common sample starts {common_start.date()}: every fund has a price from this date, "
+                   f"because the data begins on {DATA_START}, the first trading day of GLD, the youngest fund.")
+    else:
+        log.append(f"Common sample starts {common_start.date()} (limited by {', '.join(youngest)}, "
+                   f"the youngest fund).")
     px = px.loc[common_start:]
 
     missing = px.isna()
@@ -199,7 +204,7 @@ def clean_prices(raw: pd.DataFrame, max_ffill: int = 2, stale_days: int = 5,
                   "Kept, flagged (genuine crisis moves are retained)")
 
     flags = pd.DataFrame(rows, columns=["date", "ticker", "issue", "detail", "action"])
-    log.append(f"Final sample: {len(px)} trading days, {px.index[0].date()} to "
+    log.append(f"Final sample: {len(px)} price dates ({len(px) - 1} daily returns), {px.index[0].date()} to "
                f"{px.index[-1].date()}; {len(flags)} data points flagged for review.")
     return CleaningResult(prices=px, flags=flags, log=log)
 

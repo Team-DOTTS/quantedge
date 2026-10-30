@@ -36,10 +36,14 @@ def render() -> None:
     worst_dd_name = stress_tab["max drawdown"].idxmin()
     rf_mean = float(ctx.d["rf_daily"].mean() * 252)
     return_target = rf_mean + MANDATE["return_excess_over_rf"]
+    rf_today = float((1 + ctx.d["rf_daily"].iloc[-1]) ** 252 - 1)
+    target_today = rf_today + MANDATE["return_excess_over_rf"]
 
     checks = [
         (f"Return (T-bills + {pct(MANDATE['return_excess_over_rf'], 1)})", pct(k["CAGR"]),
          f"≥ {pct(return_target, 1)}", k["CAGR"] >= return_target, "soft"),
+        ("Return against today's target", pct(k["CAGR"]), f"≥ {pct(target_today, 1)}",
+         k["CAGR"] >= target_today, "soft"),
         ("Volatility", pct(k["Annualised volatility"]), f"≤ {pct(lim['max_volatility'], 1)}",
          k["Annualised volatility"] <= lim["max_volatility"], "hard"),
         ("99% 1-day ES", pct(es99_pct), f"≤ {pct(lim['max_es99_1d'], 1)}",
@@ -74,16 +78,16 @@ def render() -> None:
                     "scenarios within tolerance, and its risk model passes out-of-sample validation.", MOSS)
     note("This verdict is computed from the limits in src/config.py, which already include our one "
          f"adjustment: the drawdown limit is {pct(lim['max_drawdown'], 0)} instead of the 15% first "
-         "proposed. So \"accept as proposed\" here matches the report's \"accept with one limit "
-         "adjusted\". The report gives the reasoning.")
+         "proposed. So \"accept as proposed\" here matches the report's recommendation to accept "
+         "the mandate with a 20% tolerance. The report gives the reasoning.")
 
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.metric("Historical return (CAGR)", pct(k["CAGR"]))
     c2.metric("Volatility", pct(k["Annualised volatility"]))
-    c3.metric(f"{s.confidence:.0%} {s.horizon}-day ES", usd(ctx.loss_usd(h["es"])),
-              help=f"Model: {s.var_method}")
+    c3.metric("99% 1-day ES (held against limit)", usd(es99_pct * ctx.value),
+              help=f"Largest of {s.var_method}, EVT and historical simulation")
     c4.metric("Maximum drawdown", pct(k["Maximum drawdown"]))
-    c5.metric("Worst crisis replay", pct(worst_hist), help=worst_hist_name)
+    c5.metric("Deepest crisis fall", pct(worst_dd), help=f"{worst_dd_name}; tested against the stress limit")
 
     left, right = st.columns([1.1, 1])
     with left:
@@ -105,7 +109,7 @@ def render() -> None:
         # st.table wraps long check names, so all four columns stay visible
         st.table(tbl.style.map(lambda v: f"color:{status_colour[v]};font-weight:600"
                                if v in status_colour else "", subset=["Status"]))
-        note(f"ES is the more conservative of {s.var_method} and EVT ({usd(es99_pct * ctx.value)}). "
+        note(f"ES is the largest of {s.var_method}, EVT and historical simulation ({usd(es99_pct * ctx.value)}). "
              f"Deepest crisis fall: {worst_dd_name}. Invented scenario: {hyp_name}. "
              f"VaR backtest uses {s.var_method}.")
 
@@ -117,15 +121,16 @@ def render() -> None:
         top = cx.risk_budget(ctx)["share of ES"].sort_values(ascending=False)
         st.markdown(
             f"Most tail risk comes from **{top.index[0]}** ({pct(top.iloc[0], 0)} of ES) and "
-            f"**{top.index[1]}** ({pct(top.iloc[1], 0)}). The worst replayed crisis was the "
+            f"**{top.index[1]}** ({pct(top.iloc[1], 0)}). The deepest fall inside a crisis was "
+            f"{pct(worst_dd, 1)} ({worst_dd_name}); the worst end-to-end replay was the "
             f"{worst_hist_name} ({pct(worst_hist, 1)}); our invented "
             f"\"{hyp_name}\" scenario costs {pct(hyp['total_return'], 1)}.")
     with q2:
         st.markdown("**How bad could losses become?**")
         st.markdown(
-            f"On a bad day (1 in {1 / (1 - s.confidence):.0f}) we expect to lose more than "
-            f"**{usdm(ctx.loss_usd(h['var']))}**; when that happens the average loss is "
-            f"**{usdm(ctx.loss_usd(h['es']))}**. Extreme Value Theory puts the tail average at "
+            f"On a bad day (1 in 100) we expect to lose more than "
+            f"**{usdm(float(ve.to_loss_pct(h['var99'])) * ctx.value)}**; when that happens the average loss is "
+            f"**{usdm(es99_pct * ctx.value)}** (the larger of our model, EVT and history). Extreme Value Theory puts the tail average at "
             f"**{usdm(ctx.loss_usd(h['evt_es']))}**. Over the full sample the deepest fall was "
             f"{pct(k['Maximum drawdown'], 1)} ({usdm(-k['Maximum drawdown'] * ctx.value)}).")
     with q3:

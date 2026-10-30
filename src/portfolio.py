@@ -180,12 +180,14 @@ def risk_parity(cov: pd.DataFrame, cons: Constraints) -> OptResult:
     return OptResult(pd.Series(w, cov.index), "Risk parity (equal risk contribution)", ok, msg)
 
 
-def min_cvar(simple_ret: pd.DataFrame, cons: Constraints, confidence: float = 0.95) -> OptResult:
+def min_cvar(simple_ret: pd.DataFrame, cons: Constraints, confidence: float = 0.95,
+             min_return: float | None = None) -> OptResult:
     """Minimise historical Expected Shortfall via the Rockafellar-Uryasev (2000)
     linear programme.  Variables: weights w, VaR level a, tail excesses u_t >= 0.
 
         min  a + 1 / ((1 - c) T) * sum(u_t)
         s.t. u_t >= -r_t.w - a,   sum(w) = 1,  group and bound limits
+             mean(r).w >= min_return            (optional; their eq. 15, daily units)
 
     The volatility ceiling is non-linear and is not imposed here (checked afterwards)."""
     r = simple_ret.dropna().values
@@ -201,6 +203,9 @@ def min_cvar(simple_ret: pd.DataFrame, cons: Constraints, confidence: float = 0.
     if cons.min_bonds > 0.0:
         rows.append(sparse.csr_matrix(np.concatenate([-bd, [0.0], np.zeros(t)])))
         rhs.append([-cons.min_bonds])
+    if min_return is not None:
+        rows.append(sparse.csr_matrix(np.concatenate([-r.mean(axis=0), [0.0], np.zeros(t)])))
+        rhs.append([-min_return])
     a_ub = sparse.vstack(rows).tocsr()
     b_ub = np.concatenate([np.atleast_1d(x) for x in rhs])
     a_eq = sparse.csr_matrix(np.concatenate([np.ones(n), [0.0], np.zeros(t)]))

@@ -69,10 +69,11 @@ def render_sidebar() -> Settings:
                        help="10-day figures use square-root-of-time scaling.")
 
     sb.header("Backtest")
-    rng = sb.date_input("Backtest period", value=(date(2012, 1, 1), date.today()),
+    # Default start: the first date with 500 days of history behind it, so 2008 is in the test
+    rng = sb.date_input("Backtest period", value=(date(2007, 1, 3), date.today()),
                         min_value=date(2007, 1, 1), max_value=date.today())
     bt_start, bt_end = (rng if isinstance(rng, (tuple, list)) and len(rng) == 2
-                        else (date(2012, 1, 1), date.today()))
+                        else (date(2007, 1, 3), date.today()))
     window = sb.select_slider("Estimation window (trading days)", [250, 500, 750, 1000], value=500)
 
     with sb.expander("Portfolio construction", expanded=False):
@@ -265,8 +266,10 @@ def headline(ctx: Context) -> dict:
     ev = get("EVT (GPD-POT)", ctx.s.confidence)
     sel99 = get(ctx.s.var_method, 0.99)
     ev99 = get("EVT (GPD-POT)", 0.99)
+    hs99 = get("Historical simulation", 0.99)
+    # The ES held against the limit is the largest of the selected model, EVT and history
     return {"table": tab, "var": sel[0], "es": sel[1], "evt_var": ev[0], "evt_es": ev[1],
-            "es99_conservative": max(sel99[1], ev99[1])}
+            "var99": sel99[0], "es99_conservative": max(sel99[1], ev99[1], hs99[1])}
 
 
 def stress_results(ctx: Context) -> pd.DataFrame:
@@ -294,7 +297,7 @@ def risk_budget(ctx: Context) -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def bootstrap(port_log: pd.Series, c: float):
-    return ve.bootstrap_ci(port_log.values, c, n_boot=500)
+    return ve.bootstrap_ci(port_log.values, c, n_boot=1000)
 
 
 def hypothetical_worst(ctx: Context) -> tuple[str, dict]:

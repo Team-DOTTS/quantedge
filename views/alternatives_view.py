@@ -84,9 +84,10 @@ def render() -> None:
     }))
     f = a["floor"]
     note(f"3,000 simulated 5-year paths built from 1-month blocks of real history. Across {f['n']} "
-         f"round-number mixes the shallowest full-sample drawdown was {pct(f['best_mdd'], 1)}, and only "
-         f"{pct(f['share_within_15'], 1)} of mixes stayed within 15%: that is why the drawdown limit is "
-         f"{pct(lim['max_drawdown'], 0)}.")
+         f"round-number mixes, with AGG allowed up to 80% to find the true floor, the shallowest full-sample "
+         f"drawdown was {pct(f['best_mdd'], 1)} and only {pct(f['share_within_15'], 1)} of mixes stayed within "
+         f"15%. Within our 60% AGG cap the best was {pct(f['best_mdd_in_cap'], 1)}, so no allowed mix meets 15%: "
+         f"that is why the drawdown limit is {pct(lim['max_drawdown'], 0)}.")
 
     st.subheader("Facts quoted in the memo")
     facts = a["facts"]

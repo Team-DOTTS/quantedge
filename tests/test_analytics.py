@@ -118,6 +118,33 @@ def test_min_cvar_has_lowest_es():
     assert es["Minimum CVaR (Expected Shortfall)"] <= min(es.values()) + 1e-6
 
 
+def test_min_cvar_return_floor_is_respected_and_costs_es():
+    sr = data.simple_returns(synthetic_prices(2500, df=4))
+    cons = pf.Constraints(0.0, 0.5, 0.6, 0.3, None)
+    free = pf.min_cvar(sr, cons, 0.95).weights
+    floor = float(sr.values.mean(axis=0) @ free.values) + 0.00001
+    res = pf.min_cvar(sr, cons, 0.95, min_return=floor)
+    assert res.success
+    tied = res.weights
+    assert float(sr.values.mean(axis=0) @ tied.values) >= floor - 1e-9
+    es = lambda w: ve.historical(sr.values @ w.values, 0.95)[1]  # noqa: E731
+    assert es(tied) >= es(free) - 1e-9
+
+
+def test_qlr_finds_a_known_break():
+    from src.regime import QLR_CRITICAL, qlr_break
+    rng = np.random.default_rng(5)
+    n = 3000
+    x = rng.standard_normal(n) * 0.01
+    beta = np.where(np.arange(n) < 1800, -0.2, 0.3)
+    y = beta * x + rng.standard_normal(n) * 0.004
+    idx = pd.bdate_range("2010-01-01", periods=n)
+    res = qlr_break(pd.Series(y, idx), pd.Series(x, idx), step=10)
+    assert res["F"] > QLR_CRITICAL[0.05]
+    assert abs(idx.get_loc(res["date"]) - 1800) <= 30
+    assert res["beta_before"] < 0 < res["beta_after"]
+
+
 def test_fund_caps_are_respected():
     sr = data.simple_returns(synthetic_prices(2500))
     mu, cov, _ = pf.estimate_inputs(sr)

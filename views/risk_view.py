@@ -33,6 +33,10 @@ def render() -> None:
     for col, (label, val, _, helptext) in zip(cols, trio):
         col.metric(label, usd(ctx.loss_usd(val)), f"{pct(ctx.loss_pct(val))} of capital",
                    delta_color="off", help=helptext)
+    es_limit = float(ve.to_loss_pct(h["es99_conservative"]))
+    note(f"These figures are for the selected model ({s.var_method}). The mandate's ES limit is held against "
+         f"the largest of {s.var_method}, EVT and historical simulation at 99% over 1 day: "
+         f"{usd(es_limit * ctx.value)} ({pct(es_limit)} of capital), the figure on the Recommendation page.")
 
     # --- tail ladder: the loss distribution with the three markers ----------
     loss_usd = ve.to_loss_pct(-ctx.port_log.values) * ctx.value  # daily, 1-day
@@ -128,7 +132,7 @@ def render() -> None:
     b1.metric("Historical VaR, 90% bootstrap range", f"{k(boot['var_lo'])} – {k(boot['var_hi'])}")
     b2.metric("Historical ES, 90% bootstrap range", f"{k(boot['es_lo'])} – {k(boot['es_hi'])}")
     b3.metric("Monte Carlo VaR standard error", usd(mce["var_se"] * ctx.value * np.sqrt(s.horizon)))
-    note("The bootstrap resamples history 500 times and recomputes the estimate; a wide range means "
+    note("The bootstrap resamples history 1,000 times and recomputes the estimate; a wide range means "
          "the number should be quoted with caution. ES ranges are wider than VaR ranges because ES "
          "depends on the few most extreme days.")
 
