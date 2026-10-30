@@ -21,8 +21,8 @@ are attached: clustered VaR breaches, a conditional ES limit, and a stock–bond
 moves 5% from AGG to gold if the new mix still passes every limit. A break test dates the change in the
 stock–bond relationship to 26 March 2020.
 
-Full reasoning: [`docs/report/report.pdf`](docs/report/report.pdf). One-page summaries:
-[`tearsheet.pdf`](docs/report/tearsheet.pdf) and [`tearsheet_visual.pdf`](docs/report/tearsheet_visual.pdf).
+Full reasoning: [`docs/report/report.pdf`](docs/report/report.pdf). One-page summary:
+[`tearsheet.pdf`](docs/report/tearsheet.pdf).
 
 ---
 
