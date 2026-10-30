@@ -6,3 +6,4 @@ Risk-aware portfolio construction and tail-risk dashboard for a conservative end
 * Thinula Harischandra
 * Thisumi Hettiarachchige
 * Omindu Ranthika
+* Dinera Susiriwardana
