@@ -27,7 +27,7 @@ Full reasoning: [`docs/report/report.pdf`](docs/report/report.pdf).
 ## Quick start
 
 ```bash
-git clone [<this repo>](https://github.com/Team-DOTTS/quantedge)
+git clone https://github.com/Team-DOTTS/quantedge
 cd quantedge
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
