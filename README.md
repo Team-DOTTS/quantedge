@@ -4,3 +4,4 @@ Risk-aware portfolio construction and tail-risk dashboard for a conservative end
 
 ## Team Members
 * Thinula Harischandra
+* Thisumi Hettiarachchige
